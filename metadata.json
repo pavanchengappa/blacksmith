@@ -1,0 +1,5 @@
+{
+  "name": "BLACKSMITH",
+  "description": "A minimal, aesthetic workout tracker with multi-user support, body-heat visualization, and progress analytics.",
+  "requestFramePermissions": []
+}
