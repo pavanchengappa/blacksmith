@@ -12,7 +12,8 @@ Blacksmith is a modern, high-performance workout logger designed to help you tra
 - **🏋️‍♂️ Workout Logging**: Easily log exercises with sets, reps, and weight. Support for custom exercises.
 - **📊 Dashboard**: Get a high-level overview of your activity, including total volume lifted and weekly workout counts.
 - **🔥 Muscle Heatmap**: Visual representation of the muscle groups you've targeted.
-- **📈 Progress Charts**: Track your volume and consistency over time.
+- **� Advanced Analytics**: Visualize progress with Volume, Max Weight, Estimated 1RM, and Frequency charts.
+- **🆚 Session Comparison**: Compare your performance against previous sessions for specific muscle groups or exercises.
 - **📅 History**: Review past workouts, edit logs, and delete entries.
 - **👥 Multi-User Support**: Create and switch between multiple athlete profiles.
 - **☁️ Cloud Sync**: Optional integration with Supabase to sync data across devices.
@@ -48,7 +49,7 @@ Blacksmith is a modern, high-performance workout logger designed to help you tra
     npm run dev
     ```
 
-4.  Open your browser and navigate to the local URL provided (usually `http://localhost:5173`).
+4.  Open your browser and navigate to the local URL provided (usually `http://localhost:5173` or `http://localhost:3000`).
 
 ## Configuration
 
@@ -63,5 +64,12 @@ To enable cloud sync, you need a Supabase project.
     create table app_data ( key text primary key, value jsonb );
     ```
 
-3.  In the Blacksmith app, go to your Profile and click "Connect Cloud".
-4.  Enter your Supabase Project URL and Anon Public Key.
+3.  Create a `.env` file in the root directory (copy from `.env.example` if available).
+4.  Add your Supabase credentials:
+
+    ```env
+    VITE_SUPABASE_URL=your_project_url
+    VITE_SUPABASE_KEY=your_anon_key
+    ```
+
+5.  Restart the development server. The cloud icon in the header will turn green if connected.

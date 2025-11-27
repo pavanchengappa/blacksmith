@@ -9,26 +9,23 @@ const KEYS = {
   SUPABASE_CONFIG: 'blacksmith_supabase_config'
 };
 
-interface SupabaseConfig {
-  url: string;
-  key: string;
-}
-
 let supabase: SupabaseClient | null = null;
 
-// Initialize Supabase if config exists
+// Initialize Supabase from Environment Variables
 const initSupabase = () => {
-  const configStr = localStorage.getItem(KEYS.SUPABASE_CONFIG);
-  if (configStr) {
-    const config: SupabaseConfig = JSON.parse(configStr);
+  const url = import.meta.env.VITE_SUPABASE_URL;
+  const key = import.meta.env.VITE_SUPABASE_KEY;
+
+  if (url && key && url !== 'your_supabase_url_here') {
     try {
-      supabase = createClient(config.url, config.key);
+      supabase = createClient(url, key);
       console.log('BLACKSMITH: Cloud Client Initialized');
     } catch (e) {
       console.error('BLACKSMITH: Cloud Connection Failed', e);
       supabase = null;
     }
   } else {
+    console.log('BLACKSMITH: No Cloud Config Found (Check .env)');
     supabase = null;
   }
 };
@@ -45,7 +42,7 @@ const getGeneric = async <T>(key: string, localFallback: T): Promise<T> => {
         .select('value')
         .eq('key', key.replace('fitTrack_', '')) // map 'fitTrack_users' -> 'users'
         .single();
-        
+
       if (!error && data) {
         return data.value as T;
       }
@@ -79,18 +76,13 @@ const saveGeneric = async <T>(key: string, value: T) => {
 export const StorageService = {
   isCloudConnected: () => !!supabase,
 
-  connectCloud: (url: string, key: string) => {
-    localStorage.setItem(KEYS.SUPABASE_CONFIG, JSON.stringify({ url, key }));
-    initSupabase();
-    // Dispatch event to notify App to reload data
-    window.dispatchEvent(new Event('blacksmith_storage_change'));
+  // connectCloud is now a no-op as it's handled via env vars
+  connectCloud: (_url: string, _key: string) => {
+    console.warn("Manual cloud connection is disabled. Use .env variables.");
   },
 
   disconnectCloud: () => {
-    localStorage.removeItem(KEYS.SUPABASE_CONFIG);
-    supabase = null;
-    // Dispatch event to notify App to reload data
-    window.dispatchEvent(new Event('blacksmith_storage_change'));
+    console.warn("Cannot disconnect hardcoded cloud connection.");
   },
 
   getUsers: async (): Promise<User[]> => {
@@ -102,7 +94,29 @@ export const StorageService = {
   },
 
   getExercises: async (): Promise<Exercise[]> => {
-    return getGeneric<Exercise[]>(KEYS.EXERCISES, INITIAL_EXERCISES);
+    const exercises = await getGeneric<Exercise[]>(KEYS.EXERCISES, INITIAL_EXERCISES);
+
+    // Migration / Validation Check
+    const validBodyParts = [
+      'QUADS FOCUSED',
+      'CHEST + BICEP',
+      'BACK + TRICEPS',
+      'REST DAY – 10k STEPS + ABS',
+      'REST DAY – ABS + 10k STEPS + CALF',
+      'CHEST + SHOULDER',
+      'HAMS & BACK',
+      'ARMS'
+    ];
+
+    const hasInvalidParts = exercises.some(ex => !validBodyParts.includes(ex.bodyPart as string));
+
+    if (hasInvalidParts) {
+      console.log('BLACKSMITH: Detected stale exercises. Resetting to new defaults.');
+      await StorageService.saveExercises(INITIAL_EXERCISES);
+      return INITIAL_EXERCISES;
+    }
+
+    return exercises;
   },
 
   saveExercises: async (exercises: Exercise[]) => {
@@ -116,17 +130,17 @@ export const StorageService = {
   saveLogs: async (logs: WorkoutLog[]) => {
     await saveGeneric(KEYS.LOGS, logs);
   },
-  
+
   exportDataToCSV: (logs: WorkoutLog[], users: User[]) => {
     const headers = ['User', 'Date', 'Body Part', 'Exercise', 'Set', 'Weight (kg/lbs)', 'Reps', 'Notes'];
-    
+
     const rows: string[] = [];
     rows.push(headers.join(','));
 
     logs.forEach(log => {
       const user = users.find(u => u.id === log.userId)?.name || 'Unknown';
       const date = new Date(log.date).toLocaleDateString();
-      
+
       log.sets.forEach((set, index) => {
         const row = [
           `"${user}"`,

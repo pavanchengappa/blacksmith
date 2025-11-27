@@ -1,34 +1,95 @@
-import { User, Exercise, BodyPart } from './types';
+import { User, Exercise, BodyPart, AnatomicalPart } from './types';
 
 export const DEFAULT_USERS: User[] = [
   { id: 'u1', name: 'Pavan', avatarColor: 'bg-blue-500' },
   { id: 'u2', name: 'Sandy', avatarColor: 'bg-emerald-500' },
 ];
 
-export const BODY_PARTS = ['Chest', 'Back', 'Shoulders', 'Arms', 'Legs', 'Core'] as const;
+export const BODY_PARTS: BodyPart[] = [
+  'QUADS FOCUSED',
+  'CHEST + BICEP',
+  'BACK + TRICEPS',
+  'REST DAY – 10k STEPS + ABS',
+  'REST DAY – ABS + 10k STEPS + CALF',
+  'CHEST + SHOULDER',
+  'HAMS & BACK',
+  'ARMS'
+];
 
 export const INITIAL_EXERCISES: Exercise[] = [
-  { id: 'e1', name: 'Bench Press', bodyPart: 'Chest' },
-  { id: 'e2', name: 'Push Ups', bodyPart: 'Chest' },
-  { id: 'e3', name: 'Pull Ups', bodyPart: 'Back' },
-  { id: 'e4', name: 'Lat Pulldown', bodyPart: 'Back' },
-  { id: 'e5', name: 'Overhead Press', bodyPart: 'Shoulders' },
-  { id: 'e6', name: 'Lateral Raise', bodyPart: 'Shoulders' },
-  { id: 'e7', name: 'Bicep Curls', bodyPart: 'Arms' },
-  { id: 'e8', name: 'Tricep Dips', bodyPart: 'Arms' },
-  { id: 'e9', name: 'Squats', bodyPart: 'Legs' },
-  { id: 'e10', name: 'Lunges', bodyPart: 'Legs' },
-  { id: 'e11', name: 'Plank', bodyPart: 'Core' },
-  { id: 'e12', name: 'Crunches', bodyPart: 'Core' },
+  // QUADS FOCUSED
+  { id: 'e1', name: 'Weighted single-leg calf raise', bodyPart: 'QUADS FOCUSED' },
+  { id: 'e2', name: 'Leg extension', bodyPart: 'QUADS FOCUSED' },
+  { id: 'e3', name: 'Smith squat', bodyPart: 'QUADS FOCUSED' },
+  { id: 'e4', name: 'Leg press (45 degree)', bodyPart: 'QUADS FOCUSED' },
+  { id: 'e5', name: 'Lunges', bodyPart: 'QUADS FOCUSED' },
+  { id: 'e6', name: 'Seated leg curl', bodyPart: 'QUADS FOCUSED' },
+  { id: 'e7', name: 'Calf press', bodyPart: 'QUADS FOCUSED' },
+
+  // CHEST + BICEP
+  { id: 'e8', name: 'Incline bench press', bodyPart: 'CHEST + BICEP' },
+  { id: 'e9', name: 'Incline dumbbell press', bodyPart: 'CHEST + BICEP' },
+  { id: 'e10', name: 'Decline smith press', bodyPart: 'CHEST + BICEP' },
+  { id: 'e11', name: 'Cable side lateral', bodyPart: 'CHEST + BICEP' },
+  { id: 'e12', name: 'Flat dumbbell fly', bodyPart: 'CHEST + BICEP' },
+  { id: 'e13', name: 'Cable crossover', bodyPart: 'CHEST + BICEP' },
+  { id: 'e14', name: 'Cable curl', bodyPart: 'CHEST + BICEP' },
+
+  // BACK + TRICEPS
+  { id: 'e15', name: 'Deadlift', bodyPart: 'BACK + TRICEPS' },
+  { id: 'e16', name: 'Neutral-grip pull-ups', bodyPart: 'BACK + TRICEPS' },
+  { id: 'e17', name: 'Supinated-grip lat pull-down', bodyPart: 'BACK + TRICEPS' },
+  { id: 'e18', name: 'Barbell row', bodyPart: 'BACK + TRICEPS' },
+  { id: 'e19', name: 'Single-arm supinated-grip cable row', bodyPart: 'BACK + TRICEPS' },
+  { id: 'e20', name: 'Straight-bar cable pullover', bodyPart: 'BACK + TRICEPS' },
+  { id: 'e21', name: 'Cable overhead extension (bar)', bodyPart: 'BACK + TRICEPS' },
+
+  // REST DAY – 10k STEPS + ABS
+  { id: 'e22', name: 'Swiss ball sit-ups', bodyPart: 'REST DAY – 10k STEPS + ABS' },
+  { id: 'e23', name: 'Abs roller', bodyPart: 'REST DAY – 10k STEPS + ABS' },
+  { id: 'e24', name: 'Leg raise', bodyPart: 'REST DAY – 10k STEPS + ABS' },
+
+  // REST DAY – ABS + 10k STEPS + CALF
+  { id: 'e25', name: 'Cable crunches', bodyPart: 'REST DAY – ABS + 10k STEPS + CALF' },
+  { id: 'e26', name: 'Decline leg raises → decline sit-ups (superset)', bodyPart: 'REST DAY – ABS + 10k STEPS + CALF' },
+  { id: 'e27', name: 'Wood choppers (high to low)', bodyPart: 'REST DAY – ABS + 10k STEPS + CALF' },
+
+
+  // CHEST + SHOULDER
+  { id: 'e28', name: 'Incline smith chest press', bodyPart: 'CHEST + SHOULDER' },
+  { id: 'e29', name: 'Dumbbell shoulder press', bodyPart: 'CHEST + SHOULDER' },
+  { id: 'e30', name: 'Machine shoulder press', bodyPart: 'CHEST + SHOULDER' },
+  { id: 'e31', name: 'Incline chest cable fly', bodyPart: 'CHEST + SHOULDER' },
+  { id: 'e32', name: 'Incline bench chest-supported dumbbell side lateral', bodyPart: 'CHEST + SHOULDER' },
+  { id: 'e33', name: 'Dumbbell rear lateral', bodyPart: 'CHEST + SHOULDER' },
+
+  // HAMS & BACK
+  { id: 'e34', name: 'RDL', bodyPart: 'HAMS & BACK' },
+  { id: 'e35', name: 'Supinated-grip lat pull-down', bodyPart: 'HAMS & BACK' }, // Duplicate, handled by ID if needed, but here we just list initials
+  { id: 'e36', name: 'Dumbbell row', bodyPart: 'HAMS & BACK' },
+  { id: 'e37', name: 'Pronated-grip cable row', bodyPart: 'HAMS & BACK' },
+  { id: 'e38', name: 'Barbell shrugs', bodyPart: 'HAMS & BACK' },
+  { id: 'e39', name: 'Stiff-leg deadlift', bodyPart: 'HAMS & BACK' },
+  { id: 'e40', name: 'Hyperextension', bodyPart: 'HAMS & BACK' },
+  { id: 'e41', name: 'Cable crunches', bodyPart: 'HAMS & BACK' },
+
+  // ARMS
+  { id: 'e42', name: 'Dips', bodyPart: 'ARMS' },
+  { id: 'e43', name: 'Dumbbell skullcrusher', bodyPart: 'ARMS' },
+  { id: 'e44', name: 'Dumbbell overhead extension', bodyPart: 'ARMS' },
+  { id: 'e45', name: 'Barbell curl', bodyPart: 'ARMS' },
+  { id: 'e46', name: 'Single-arm cable hammer curl', bodyPart: 'ARMS' },
+  { id: 'e47', name: 'Dumbbell incline curl → dumbbell hammer curl (superset)', bodyPart: 'ARMS' },
+  { id: 'e48', name: 'Reverse pec deck fly (rear delt)', bodyPart: 'ARMS' },
 ];
 
 // Geometric / Boxy SVG Paths
 // ViewBox: 0 0 200 400
 
-export const FRONT_VIEW_PATHS: Record<string, { path: string, part: BodyPart | 'Head' }> = {
-  head: { 
-    path: "M85,10 L115,10 L115,45 L85,45 Z", 
-    part: 'Head' 
+export const FRONT_VIEW_PATHS: Record<string, { path: string, part: AnatomicalPart }> = {
+  head: {
+    path: "M85,10 L115,10 L115,45 L85,45 Z",
+    part: 'Head'
   },
   neck: {
     path: "M90,45 L110,45 L110,55 L90,55 Z",
@@ -84,7 +145,7 @@ export const FRONT_VIEW_PATHS: Record<string, { path: string, part: BodyPart | '
   }
 };
 
-export const BACK_VIEW_PATHS: Record<string, { path: string, part: BodyPart | 'Head' }> = {
+export const BACK_VIEW_PATHS: Record<string, { path: string, part: AnatomicalPart }> = {
   head: {
     path: "M85,10 L115,10 L115,45 L85,45 Z",
     part: 'Head'

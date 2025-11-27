@@ -3,6 +3,7 @@ import { HashRouter, Routes, Route, Link, useLocation, Navigate } from 'react-ro
 import { Plus, User as UserIcon, Activity, Calendar, Trash2, Save, Download, ArrowLeft, MoreVertical, X, TrendingUp, LogOut, Edit2, Cloud, CloudOff, Settings } from 'lucide-react';
 import { BodyFigurine } from './components/BodyFigurine';
 import { ProgressCharts } from './components/ProgressCharts';
+import { ComparisonView } from './components/ComparisonView';
 import { StorageService } from './services/storageService';
 import { User, WorkoutLog, Exercise, BodyPart, WorkoutSet } from './types';
 import { BODY_PARTS } from './constants';
@@ -97,19 +98,14 @@ const Layout: React.FC<{
             {React.cloneElement(link.icon as React.ReactElement<any>, { size: 24, strokeWidth: location.pathname === link.path ? 3 : 2 })}
           </Link>
         ))}
-        <button
-          onClick={() => setShowProfile(true)}
-          className="flex flex-col items-center gap-1 p-2 rounded-xl transition-colors text-muted"
-        >
-          <UserIcon size={24} strokeWidth={2} />
-        </button>
       </nav>
 
+      {/* Profile Modal */}
       {showProfile && (
         <ProfileModal
           currentUser={currentUser}
           allUsers={allUsers}
-          onSwitch={(id) => { onSwitch(id); setShowProfile(false); }}
+          onSwitch={onSwitch}
           onAddUser={onAddUser}
           onDeleteUser={onDeleteUser}
           onClose={() => setShowProfile(false)}
@@ -142,10 +138,13 @@ const SetsInput: React.FC<{ sets: InputSet[]; onChange: (sets: InputSet[]) => vo
               type="number"
               inputMode="decimal"
               step="any"
+              min="0"
               placeholder="0"
               className="w-full bg-surface border border-zinc-800 rounded-lg py-2 text-center text-white font-bold focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-zinc-700 text-sm"
               value={set.weight}
               onChange={(e) => {
+                const val = parseFloat(e.target.value);
+                if (val < 0) return;
                 const newSets = [...sets];
                 newSets[idx].weight = e.target.value;
                 onChange(newSets);
@@ -157,10 +156,13 @@ const SetsInput: React.FC<{ sets: InputSet[]; onChange: (sets: InputSet[]) => vo
             <input
               type="number"
               inputMode="decimal"
+              min="0"
               placeholder="0"
               className="w-full bg-surface border border-zinc-800 rounded-lg py-2 text-center text-white font-bold focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all placeholder:text-zinc-700 text-sm"
               value={set.reps}
               onChange={(e) => {
+                const val = parseFloat(e.target.value);
+                if (val < 0) return;
                 const newSets = [...sets];
                 newSets[idx].reps = e.target.value;
                 onChange(newSets);
@@ -186,6 +188,7 @@ const LogWorkout: React.FC<{
   const [selectedExerciseId, setSelectedExerciseId] = useState<string>('');
   const [sets, setSets] = useState<InputSet[]>([{ weight: '', reps: '' }, { weight: '', reps: '' }, { weight: '', reps: '' }]);
   const [notes, setNotes] = useState('');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
 
   const [isAddingCustom, setIsAddingCustom] = useState(false);
   const [customName, setCustomName] = useState('');
@@ -225,8 +228,8 @@ const LogWorkout: React.FC<{
     const newLog: WorkoutLog = {
       id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       userId: user.id,
-      date: new Date().toISOString(),
-      timestamp: Date.now(),
+      date: new Date(date).toISOString(),
+      timestamp: new Date(date).getTime(),
       exerciseId: exercise.id,
       exerciseName: exercise.name,
       bodyPart: selectedPart,
@@ -262,7 +265,15 @@ const LogWorkout: React.FC<{
     <div className="h-full flex flex-col gap-6">
       <div className="flex items-center justify-between mb-2">
         <h2 className="text-xl font-black text-white italic tracking-tighter">LOG WORKOUT</h2>
-        <button onClick={() => { onPartSelect(null); setSelectedExerciseId(''); }} className="text-xs font-bold text-muted hover:text-white uppercase tracking-wider">Reset</button>
+        <div className="flex items-center gap-3">
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="bg-transparent text-xs font-bold text-muted uppercase tracking-wider outline-none text-right invert-0 dark:invert"
+          />
+          <button onClick={() => { onPartSelect(null); setSelectedExerciseId(''); }} className="text-xs font-bold text-muted hover:text-white uppercase tracking-wider">Reset</button>
+        </div>
       </div>
 
       {/* 1. Muscle Group Selector */}
@@ -435,7 +446,6 @@ const EditLogModal: React.FC<{
   );
 };
 
-
 // --- Dashboard Screen ---
 const Dashboard: React.FC<{
   logs: WorkoutLog[];
@@ -446,6 +456,7 @@ const Dashboard: React.FC<{
   onDeleteExercise: (id: string) => void;
 }> = ({ logs, user, exercises, onSave, onAddExercise, onDeleteExercise }) => {
   const [selectedPart, setSelectedPart] = useState<BodyPart | null>(null);
+  const [chartType, setChartType] = useState<'Volume' | 'MaxWeight' | 'WeeklyComparison' | 'OneRM' | 'Frequency'>('Volume');
   const userLogs = useMemo(() => logs.filter(l => l.userId === user?.id), [logs, user]);
   const filteredLogs = useMemo(() => selectedPart ? userLogs.filter(l => l.bodyPart === selectedPart) : userLogs, [userLogs, selectedPart]);
 
@@ -501,11 +512,27 @@ const Dashboard: React.FC<{
           </div>
 
           <div className="bg-surface rounded-3xl p-6 border border-zinc-800 shadow-xl overflow-hidden flex-1 min-h-[300px]">
-            <h3 className="text-lg font-black text-white italic mb-4 flex items-center gap-2 tracking-tighter">
-              <TrendingUp size={18} className="text-primary" /> PROGRESS
-            </h3>
-            <ProgressCharts logs={filteredLogs} filterType="Volume" />
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-black text-white italic flex items-center gap-2 tracking-tighter">
+                <TrendingUp size={18} className="text-primary" /> PROGRESS
+              </h3>
+              <select
+                value={chartType}
+                onChange={(e) => setChartType(e.target.value as any)}
+                className="bg-zinc-900 border border-zinc-800 text-xs font-bold text-white rounded-lg px-2 py-1 outline-none focus:border-primary"
+              >
+                <option value="Volume">Volume</option>
+                <option value="MaxWeight">Max Weight</option>
+                <option value="WeeklyComparison">Weekly Volume</option>
+                <option value="OneRM">Est. 1RM</option>
+                <option value="Frequency">Frequency</option>
+              </select>
+            </div>
+            <ProgressCharts logs={filteredLogs} chartType={chartType} />
           </div>
+
+          {/* Comparison View */}
+          <ComparisonView logs={userLogs} exercises={exercises} selectedPart={selectedPart} />
         </div>
 
         {/* RIGHT: Logger (Sticky) */}
@@ -595,66 +622,6 @@ const History: React.FC<{
   );
 };
 
-// --- Cloud Config Modal ---
-const CloudConfigModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
-  const [url, setUrl] = useState('');
-  const [key, setKey] = useState('');
-
-  const handleConnect = () => {
-    if (!url || !key) return alert('Please enter both URL and Key');
-    StorageService.connectCloud(url, key);
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 backdrop-blur-sm p-4 animate-fade-in">
-      <div className="bg-surface w-full max-w-lg rounded-3xl border border-zinc-800 p-6 shadow-2xl relative">
-        <button onClick={onClose} className="absolute top-4 right-4 text-zinc-500 hover:text-white"><X size={24} /></button>
-
-        <div className="mb-6 flex flex-col items-center text-center">
-          <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mb-4 text-primary">
-            <Cloud size={32} />
-          </div>
-          <h3 className="text-2xl font-black text-white italic uppercase">Connect to Cloud</h3>
-          <p className="text-muted text-sm mt-2">Enter your Supabase credentials to sync data across devices.</p>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <label className="text-xs font-bold text-muted uppercase block mb-1">Project URL</label>
-            <input
-              className="w-full bg-black border border-zinc-800 rounded-xl p-3 text-sm text-white focus:border-primary outline-none"
-              placeholder="https://xyz.supabase.co"
-              value={url}
-              onChange={e => setUrl(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="text-xs font-bold text-muted uppercase block mb-1">Anon Public Key</label>
-            <input
-              className="w-full bg-black border border-zinc-800 rounded-xl p-3 text-sm text-white focus:border-primary outline-none"
-              placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..."
-              value={key}
-              onChange={e => setKey(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="mt-4 p-4 bg-zinc-900/50 rounded-xl border border-zinc-800/50">
-          <h4 className="text-xs font-bold text-white mb-2">DB Setup Required:</h4>
-          <code className="text-[10px] text-zinc-400 font-mono block whitespace-pre-wrap">
-            create table app_data ( key text primary key, value jsonb );
-          </code>
-        </div>
-
-        <button onClick={handleConnect} className="w-full mt-6 bg-primary text-black font-black py-4 rounded-xl hover:bg-primary-dark transition-all">
-          CONNECT & SYNC
-        </button>
-      </div>
-    </div>
-  );
-};
-
 // --- Profile Modal Component ---
 const ProfileModal: React.FC<{
   currentUser: User | null;
@@ -666,7 +633,6 @@ const ProfileModal: React.FC<{
 }> = ({ currentUser, allUsers, onSwitch, onAddUser, onDeleteUser, onClose }) => {
   const [newUserName, setNewUserName] = useState('');
   const [isAdding, setIsAdding] = useState(false);
-  const [showCloudModal, setShowCloudModal] = useState(false);
   const isCloud = StorageService.isCloudConnected();
 
   return (
@@ -692,15 +658,9 @@ const ProfileModal: React.FC<{
             </div>
             <div>
               <h4 className="font-bold text-white text-sm">Cloud Sync</h4>
-              <p className="text-[10px] text-muted">{isCloud ? 'Data is syncing online' : 'Data is stored locally'}</p>
+              <p className="text-[10px] text-muted">{isCloud ? 'Connected via Environment' : 'Not Configured (.env missing)'}</p>
             </div>
           </div>
-          <button
-            onClick={() => isCloud ? StorageService.disconnectCloud() : setShowCloudModal(true)}
-            className="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 text-[10px] font-bold text-white hover:border-primary transition-colors"
-          >
-            {isCloud ? 'Disconnect' : 'Connect'}
-          </button>
         </div>
 
         <div className="space-y-3">
@@ -732,8 +692,6 @@ const ProfileModal: React.FC<{
             </button>
           )}
         </div>
-
-        {showCloudModal && <CloudConfigModal onClose={() => setShowCloudModal(false)} />}
       </div>
     </div>
   );
@@ -797,68 +755,67 @@ export default function App() {
   const handleDeleteLog = async (id: string) => {
     if (!window.confirm("Delete this entry?")) return;
 
-    // Functional update + Async save
-    setLogs(prevLogs => {
-      const updatedLogs = prevLogs.filter(l => l.id !== id);
-      StorageService.saveLogs(updatedLogs);
-      return updatedLogs;
-    });
-
-    if (editingLog?.id === id) {
-      setEditingLog(null);
-    }
+    const updatedLogs = logs.filter(l => l.id !== id);
+    setLogs(updatedLogs);
+    await StorageService.saveLogs(updatedLogs);
   };
 
   const handleAddExercise = async (ex: Exercise) => {
-    const updated = [...exercises, ex];
-    setExercises(updated);
-    await StorageService.saveExercises(updated);
+    const updatedExercises = [...exercises, ex];
+    setExercises(updatedExercises);
+    await StorageService.saveExercises(updatedExercises);
   };
 
   const handleDeleteExercise = async (id: string) => {
-    const hasLogs = logs.some(l => l.exerciseId === id);
-    if (hasLogs) {
-      if (!window.confirm("This exercise has history. Deleting it will keep history but remove it from the list. Continue?")) {
-        return;
-      }
-    }
-    const updated = exercises.filter(e => e.id !== id);
-    setExercises(updated);
-    await StorageService.saveExercises(updated);
+    const updatedExercises = exercises.filter(e => e.id !== id);
+    setExercises(updatedExercises);
+    await StorageService.saveExercises(updatedExercises);
   };
 
   const handleAddUser = async (name: string) => {
     if (!name.trim()) return;
-    const colors = ['bg-lime-400', 'bg-emerald-400', 'bg-cyan-400', 'bg-fuchsia-400'];
-    const newUser: User = { id: `u_${Date.now()}`, name, avatarColor: colors[Math.floor(Math.random() * colors.length)] };
-    const updated = [...users, newUser];
-    setUsers(updated);
-    await StorageService.saveUsers(updated);
+    const newUser: User = {
+      id: `user_${Date.now()}`,
+      name: name.trim(),
+      avatarColor: `bg-${['red', 'blue', 'green', 'yellow', 'purple', 'pink'][Math.floor(Math.random() * 6)]}-500`
+    };
+    const updatedUsers = [...users, newUser];
+    setUsers(updatedUsers);
+    await StorageService.saveUsers(updatedUsers);
     setCurrentUserId(newUser.id);
   };
 
   const handleDeleteUser = async (id: string) => {
-    if (!window.confirm("Delete user and all their data? This cannot be undone.")) return;
-
-    // Delete User
+    if (!window.confirm("Delete this profile and all data?")) return;
     const updatedUsers = users.filter(u => u.id !== id);
     setUsers(updatedUsers);
     await StorageService.saveUsers(updatedUsers);
-
-    // Delete User's Logs
-    const updatedLogs = logs.filter(l => l.userId !== id);
-    setLogs(updatedLogs);
-    await StorageService.saveLogs(updatedLogs);
-
-    if (currentUserId === id && updatedUsers.length > 0) setCurrentUserId(updatedUsers[0].id);
+    if (currentUserId === id && updatedUsers.length > 0) {
+      setCurrentUserId(updatedUsers[0].id);
+    }
   };
 
   const handleExport = () => {
-    const userSpecificLogs = logs.filter(l => l.userId === currentUserId);
-    StorageService.exportDataToCSV(userSpecificLogs, users);
+    const csvContent = "data:text/csv;charset=utf-8,"
+      + "Date,Body Part,Exercise,Sets,Total Reps,Total Volume,Notes\n"
+      + logs.filter(l => l.userId === currentUserId).map(l => {
+        const totalReps = l.sets.reduce((a, b) => a + b.reps, 0);
+        const totalVol = l.sets.reduce((a, b) => a + (b.weight * b.reps), 0);
+        return `${new Date(l.date).toLocaleDateString()},${l.bodyPart},${l.exerciseName},${l.sets.length},${totalReps},${totalVol},"${l.notes || ''}"`;
+      }).join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "blacksmith_data.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
-  if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-primary font-black italic text-2xl tracking-tighter">BLACKSMITH</div>;
+  if (loading) {
+    return <div className="min-h-screen bg-black flex items-center justify-center text-primary font-black animate-pulse">LOADING BLACKSMITH...</div>;
+  }
 
   return (
     <HashRouter>
@@ -870,21 +827,38 @@ export default function App() {
         onDeleteUser={handleDeleteUser}
       >
         <Routes>
-          <Route path="/" element={<Dashboard logs={logs} user={currentUser} exercises={exercises} onSave={handleSaveLog} onAddExercise={handleAddExercise} onDeleteExercise={handleDeleteExercise} />} />
-          <Route path="/history" element={<History logs={logs} user={currentUser} onDeleteLog={handleDeleteLog} onEditLog={setEditingLog} onExport={handleExport} />} />
+          <Route path="/" element={
+            <Dashboard
+              logs={logs}
+              user={currentUser}
+              exercises={exercises}
+              onSave={handleSaveLog}
+              onAddExercise={handleAddExercise}
+              onDeleteExercise={handleDeleteExercise}
+            />
+          } />
+          <Route path="/history" element={
+            <History
+              logs={logs}
+              user={currentUser}
+              onDeleteLog={handleDeleteLog}
+              onEditLog={setEditingLog}
+              onExport={handleExport}
+            />
+          } />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </Layout>
 
-      {/* Edit Modal Layer */}
-      {editingLog && (
-        <EditLogModal
-          log={editingLog}
-          onClose={() => setEditingLog(null)}
-          onUpdate={handleUpdateLog}
-          onDelete={handleDeleteLog}
-        />
-      )}
+        {/* Edit Log Modal */}
+        {editingLog && (
+          <EditLogModal
+            log={editingLog}
+            onClose={() => setEditingLog(null)}
+            onUpdate={handleUpdateLog}
+            onDelete={handleDeleteLog}
+          />
+        )}
+      </Layout>
     </HashRouter>
   );
 }

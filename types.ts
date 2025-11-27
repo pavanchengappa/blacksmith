@@ -4,7 +4,17 @@ export interface User {
   avatarColor: string;
 }
 
-export type BodyPart = 'Chest' | 'Back' | 'Shoulders' | 'Arms' | 'Legs' | 'Core';
+export type AnatomicalPart = 'Chest' | 'Back' | 'Shoulders' | 'Arms' | 'Legs' | 'Core' | 'Head';
+
+export type BodyPart =
+  | 'QUADS FOCUSED'
+  | 'CHEST + BICEP'
+  | 'BACK + TRICEPS'
+  | 'REST DAY – 10k STEPS + ABS'
+  | 'REST DAY – ABS + 10k STEPS + CALF'
+  | 'CHEST + SHOULDER'
+  | 'HAMS & BACK'
+  | 'ARMS';
 
 export interface Exercise {
   id: string;
